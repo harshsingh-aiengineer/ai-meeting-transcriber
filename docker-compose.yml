@@ -1,0 +1,31 @@
+name: meeting-intelligence
+
+services:
+  meeting-intelligence:
+    build: .
+    image: meeting-intelligence:local
+    ports:
+      - "8501:8501"
+    environment:
+      PORT: ${PORT:-8501}
+      WHISPER_MODEL: ${WHISPER_MODEL:-base}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-200}
+      DEVICE: ${DEVICE:-cpu}
+      COMPUTE_TYPE: ${COMPUTE_TYPE:-int8}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/app/data
+      - whisper-cache:/home/appuser/.cache
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,urllib.request; port=os.environ.get('PORT','8501'); urllib.request.urlopen(f'http://127.0.0.1:{port}/_stcore/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  whisper-cache:
